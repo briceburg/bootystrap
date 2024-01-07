@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+# gitbootystrap managed
+set -eo pipefail
+
+log(){ echo "$*" >&2 ; }
+die(){ log "$*"; exit 1; }
+pkg(){ pacman -S --noconfirm --needed "$@"; }
+
+(
+  . /etc/os-release
+  [ "$NAME" = "Arch Linux" ] || die "Is this Arch Linux?"
+  [ $EUID -eq 0 ] || die "Please execute as superuser."
+)
+
+aur=(
+  keyd
+  visual-studio-code-bin
+)
+
+core=(
+  acpi
+  base-devel
+  bash-completion
+  ca-certificates
+  curl
+  fakeroot # for makepkg
+  git
+  gnupg
+  lm_sensors
+  lsof
+  man-db
+  openssh
+  pinentry
+  sudo
+  tk
+  usbutils
+)
+
+gui=(
+  barrier # kvm (synergy replacement)
+  discord
+  firefox
+  flameshot
+  mesa
+  mesa-demos
+  ttf-roboto
+  wezterm
+)
+
+laptop=(
+  acpilight # xbacklight
+  powertop
+  tlp
+  x86_energy_perf_policy
+)
+
+lang=(
+  go
+  julia
+  python
+  rustup
+)
+
+util=(
+  age
+  ddcutil
+  docker
+  eza
+  github-cli
+  gnu-netcat
+  inetutils
+  jq
+  kbfs
+  keybase
+  smartmontools
+  the_silver_searcher
+  vim
+  which
+  whois
+  yq
+)
+
+xorg=(
+  dmenu
+  lxappearance-gtk3 
+  picom # xcompmgr replacement
+  wmctrl
+  xdg-utils
+  xorg-apps
+  xorg-server
+  xorg-xinit
+  xorg-xmessage
+  xsct
+  xsel
+)
+
+# booty config
+bootycfg="/etc/booty/cfg"
+prompt/cfg(){
+  local id="$1"
+  local default="$2"
+  [ -e "$id" ] || echo "$default" > "$id"
+  read -rp "$id? : " -i "$(cat "$id")" -e answer
+  echo "$answer" > "$id"
+
+  case "$id:$answer" in
+    laptop:1)
+      util+=( "${laptop[@]}" )
+      echo 1 > wifi
+      ;;
+    desktop_environment:xmonad)
+      gui+=( "${xorg[@]}" xmonad xmonad-contrib )
+      aur+=( xsct )
+      [ -e booty_branch ] || echo archlinux-xmonad > booty_branch
+      ;;
+    wifi:1)
+      util+=( iwd )
+      ;;
+  esac
+}
+(
+  mkdir -p "$bootycfg"
+  cd "$_"
+  prompt/cfg "user" "nesta"
+  prompt/cfg "timezone" "US/Mountain" # /usr/share/zoneinfo/...
+  prompt/cfg "laptop" 0
+  prompt/cfg "wifi" 0
+  prompt/cfg "desktop_environment" "xmonad"
+  prompt/cfg "booty_branch" "archlinux-default"
+)
+
+# optimize mirrorlist before installing packages
+pkg reflector
+reflector_flags=(
+  --country US
+  --protocol https
+  --latest 20
+  --score 5
+  --sort rate
+  --save /etc/pacman.d/mirrorlist
+)
+echo "${reflector_flags[@]}" > /etc/xdg/reflector/reflector.conf
+systemctl enable reflector.timer # refresh mirrors weekly
+
+grep -q Reflector /etc/pacman.d/mirrorlist || {
+  log "building mirrorlist. please wait while they're rated."
+  reflector "${reflector_flags[@]}" --verbose
+}
+
+# install packages
+pkg "${core[@]}" "${lang[@]}" "${util[@]}" "${gui[@]}"
+
+# network configuration
+systemctl enable --now systemd-resolved.service
+ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+
+# system dotfiles
+[ -d "/root/.gitbootystrap" ] || {
+  git clone --bare --branch "archlinux" https://github.com/briceburg/bootystrap "/root/.gitbootystrap"
+  git --git-dir "/root/.gitbootystrap" config status.showUntrackedFiles no
+  git --git-dir "/root/.gitbootystrap" --work-tree / checkout --force
+}
+
+# system configuration
+ln -sf "/usr/share/zoneinfo/$(cat $bootycfg/timezone)" /etc/localtime
+[ "$(cat $bootycfg/wifi)" = "1" ] && systemctl enable --now iwd.service
+systemctl enable --now systemd-timesyncd.service
+systemctl enable --now docker.service
+
+# user configuration
+user=$(cat $bootycfg/user)
+run(){ sudo -u "$user" "$@"; }
+log "configuring user: $user"
+id -u "$user" &>/dev/null || useradd --create-home  "$user"
+usermod -aG docker,log,rfkill,users,video,wheel "$user"
+run mkdir -p "/home/$user/"{git/AUR,bin,tmp}
+
+[ -d "/home/$user/.gitbooty" ] || {
+   run git clone --bare --branch "$(cat $bootycfg/booty_branch)" https://github.com/briceburg/booty "/home/$user/.gitbooty"
+   run git --git-dir "/home/$user/.gitbooty" config status.showUntrackedFiles no
+   run git --git-dir "/home/$user/.gitbooty" --work-tree "/home/$user" checkout --force
+}
+ 
+[ -d "/home/$user/git/keybase-crypt" ] || (
+  #run systemctl --user start keybase.service
+  #run systemctl --user start kbfs.service
+  echo -e '\033[1mKEYBASE STARTED, PLEASE CONTINUE TO SETUP CRYPT\033[0m'
+  read -rp "[Enter] to resume..."
+)
+
+# install AUR packages
+run /usr/local/bin/aur-install "${aur[@]}"
+
+log "[OK] Bootstrap Complete. Remember to reload your user session to pickup changes."

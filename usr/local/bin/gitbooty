@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# gitbootystrap managed
+set -eo pipefail
+
+log(){ echo "$*" >&2 ; }
+die(){ log "$*"; exit 1; }
+
+booty_dir="$HOME/.gitbooty"
+
+[ $EUID -eq 0 ] && die "Cannot execute as superuser."
+[ -d "$booty_dir" ] || die "missing $booty_dir - has user been bootystrapped?"
+
+exec git --git-dir "$booty_dir" --work-tree "$HOME" "$@"
