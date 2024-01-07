@@ -158,8 +158,12 @@ ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 [ -d "/root/.gitbootystrap" ] || {
   git clone --bare --branch "archlinux" https://github.com/briceburg/bootystrap "/root/.gitbootystrap"
   git --git-dir "/root/.gitbootystrap" config status.showUntrackedFiles no
+  git --git-dir "/root/.gitbootystrap" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+  git --git-dir "/root/.gitbootystrap" fetch
+  git --git-dir "/root/.gitbootystrap" branch -u origin/archlinux archlinux
   git --git-dir "/root/.gitbootystrap" --work-tree / checkout --force
 }
+git --git-dir "/root/.gitbootystrap" --work-tree / pull
 
 # system configuration
 ln -sf "/usr/share/zoneinfo/$(cat $bootycfg/timezone)" /etc/localtime
@@ -178,6 +182,9 @@ run mkdir -p "/home/$user/"{git/AUR,bin,tmp}
 [ -d "/home/$user/.gitbooty" ] || {
    run git clone --bare --branch "$(cat $bootycfg/booty_branch)" https://github.com/briceburg/booty "/home/$user/.gitbooty"
    run git --git-dir "/home/$user/.gitbooty" config status.showUntrackedFiles no
+   run git --git-dir "/home/$user/.gitbooty" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+   run git --git-dir "/home/$user/.gitbooty" fetch
+   run git --git-dir "/home/$user/.gitbooty" branch -u "origin/$(cat $bootycfg/booty_branch)" "$(cat $bootycfg/booty_branch)"
    run git --git-dir "/home/$user/.gitbooty" --work-tree "/home/$user" checkout --force
 }
  
