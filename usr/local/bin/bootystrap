@@ -43,8 +43,12 @@ gui=(
   flameshot
   mesa
   mesa-demos
+  pipewire-jack
+  pipewire-pulse
+  ttf-croscore
   ttf-roboto
   wezterm
+  wireplumber # replaces pipewire media session
 )
 
 laptop=(
@@ -64,7 +68,6 @@ lang=(
 util=(
   age
   ddcutil
-  docker
   eza
   github-cli
   gnu-netcat
@@ -78,6 +81,12 @@ util=(
   which
   whois
   yq
+)
+
+virt=(
+  dnsmasq
+  docker
+  libvirt
 )
 
 xorg=(
@@ -148,7 +157,7 @@ grep -q Reflector /etc/pacman.d/mirrorlist || {
 }
 
 # install packages
-pkg "${core[@]}" "${lang[@]}" "${util[@]}" "${gui[@]}"
+pkg "${core[@]}" "${lang[@]}" "${util[@]}" "${gui[@]}" "${virt[@]}"
 
 # network configuration
 systemctl enable --now systemd-resolved.service
@@ -176,7 +185,7 @@ user=$(cat $bootycfg/user)
 run(){ sudo -u "$user" "$@"; }
 log "configuring user: $user"
 id -u "$user" &>/dev/null || useradd --create-home  "$user"
-usermod -aG docker,log,rfkill,users,video,wheel "$user"
+usermod -aG docker,log,libvirt,rfkill,video,wheel "$user"
 run mkdir -p "/home/$user/"{git/AUR,bin,tmp}
 
 [ -d "/home/$user/.gitbooty" ] || {
