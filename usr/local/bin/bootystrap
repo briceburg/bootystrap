@@ -138,8 +138,9 @@ prompt/cfg(){
   prompt/cfg "booty_branch" "archlinux-default"
 )
 
-# optimize mirrorlist before installing packages
-pkg reflector
+# sync packages and optimize mirrorlist
+echo "ParallelDownloads = 3" >> /etc/pacman.conf
+pkg -y reflector
 reflector_flags=(
   --country US
   --protocol https
@@ -165,10 +166,10 @@ ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 
 # system dotfiles
 [ -d "/root/.gitbootystrap" ] || {
-  git clone --bare --branch "archlinux" https://github.com/briceburg/bootystrap "/root/.gitbootystrap"
+  git clone --bare --depth 1 --branch "archlinux" https://github.com/briceburg/bootystrap "/root/.gitbootystrap"
   git --git-dir "/root/.gitbootystrap" config status.showUntrackedFiles no
   git --git-dir "/root/.gitbootystrap" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
-  git --git-dir "/root/.gitbootystrap" fetch
+  git --git-dir "/root/.gitbootystrap" fetch --depth 1
   git --git-dir "/root/.gitbootystrap" branch -u origin/archlinux archlinux
   git --git-dir "/root/.gitbootystrap" --work-tree / checkout --force
 }
@@ -176,9 +177,10 @@ git --git-dir "/root/.gitbootystrap" --work-tree / pull
 
 # system configuration
 ln -sf "/usr/share/zoneinfo/$(cat $bootycfg/timezone)" /etc/localtime
+ln -sf /usr/bin/vim /usr/bin/vi
 [ "$(cat $bootycfg/wifi)" = "1" ] && systemctl enable --now iwd.service
 systemctl enable --now systemd-timesyncd.service
-systemctl enable --now docker.service
+#systemctl enable --now docker.service eats battery, look into toggling via tlp + protecting against running containers
 
 # user configuration
 user=$(cat $bootycfg/user)
@@ -189,10 +191,10 @@ usermod -aG docker,log,libvirt,rfkill,video,wheel "$user"
 run mkdir -p "/home/$user/"{git/AUR,bin,tmp}
 
 [ -d "/home/$user/.gitbooty" ] || {
-   run git clone --bare --branch "$(cat $bootycfg/booty_branch)" https://github.com/briceburg/booty "/home/$user/.gitbooty"
+   run git clone --bare --depth 1 --branch "$(cat $bootycfg/booty_branch)" https://github.com/briceburg/booty "/home/$user/.gitbooty"
    run git --git-dir "/home/$user/.gitbooty" config status.showUntrackedFiles no
    run git --git-dir "/home/$user/.gitbooty" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
-   run git --git-dir "/home/$user/.gitbooty" fetch
+   run git --git-dir "/home/$user/.gitbooty" fetch --depth 1
    run git --git-dir "/home/$user/.gitbooty" branch -u "origin/$(cat $bootycfg/booty_branch)" "$(cat $bootycfg/booty_branch)"
    run git --git-dir "/home/$user/.gitbooty" --work-tree "/home/$user" checkout --force
 }
