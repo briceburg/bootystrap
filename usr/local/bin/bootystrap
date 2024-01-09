@@ -125,21 +125,25 @@ prompt/cfg(){
     wifi:1)
       util+=( iwd )
       ;;
+    host:zb14x)
+      core+=( sof-firmware )
+      ;;
   esac
 }
-(
-  mkdir -p "$bootycfg"
-  cd "$_"
-  prompt/cfg "user" "nesta"
-  prompt/cfg "timezone" "US/Mountain" # /usr/share/zoneinfo/...
-  prompt/cfg "laptop" 0
-  prompt/cfg "wifi" 0
-  prompt/cfg "desktop_environment" "xmonad"
-  prompt/cfg "booty_branch" "archlinux-default"
-)
+mkdir -p "$bootycfg" && cd "$_"
+prompt/cfg "user" "nesta"
+prompt/cfg "timezone" "US/Mountain" # /usr/share/zoneinfo/...
+prompt/cfg "laptop" 0
+prompt/cfg "wifi" 0
+prompt/cfg "desktop_environment" "xmonad"
+prompt/cfg "booty_branch" "archlinux-default"
+prompt/cfg "host" "$(uname -n)"
 
 # sync packages and optimize mirrorlist
-echo "ParallelDownloads = 3" >> /etc/pacman.conf
+cat << EOF >> /etc/pacman.conf
+[options]
+ParallelDownloads = 3
+EOF
 pkg -y reflector
 reflector_flags=(
   --country US
@@ -168,12 +172,11 @@ ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 [ -d "/root/.gitbootystrap" ] || {
   git clone --bare --depth 1 --branch "archlinux" https://github.com/briceburg/bootystrap "/root/.gitbootystrap"
   git --git-dir "/root/.gitbootystrap" config status.showUntrackedFiles no
-  git --git-dir "/root/.gitbootystrap" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
   git --git-dir "/root/.gitbootystrap" fetch --depth 1
-  git --git-dir "/root/.gitbootystrap" branch -u origin/archlinux archlinux
-  git --git-dir "/root/.gitbootystrap" --work-tree / checkout --force
+  git --git-dir "/root/.gitbootystrap" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
 }
-git --git-dir "/root/.gitbootystrap" --work-tree / pull
+git --git-dir "/root/.gitbootystrap" fetch --depth 1
+git --git-dir "/root/.gitbootystrap" --work-tree / reset --hard FETCH_HEAD
 
 # system configuration
 ln -sf "/usr/share/zoneinfo/$(cat $bootycfg/timezone)" /etc/localtime
