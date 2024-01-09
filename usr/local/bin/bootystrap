@@ -14,6 +14,7 @@ pkg(){ pacman -S --noconfirm --needed "$@"; }
 
 aur=(
   keyd
+  radio-cli-bin
   visual-studio-code-bin
 )
 
@@ -99,7 +100,6 @@ xorg=(
   xorg-server
   xorg-xinit
   xorg-xmessage
-  xsct
   xsel
 )
 
