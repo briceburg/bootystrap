@@ -46,6 +46,7 @@ gui=(
   mesa-demos
   pipewire-jack
   pipewire-pulse
+  polkit-gnome
   ttf-croscore
   ttf-roboto
   wezterm
