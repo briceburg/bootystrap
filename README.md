@@ -1,16 +1,19 @@
-# booty
+# bootystrap
 briceburg's _system_ bootstrap :pirate_flag: :gift:
 
 ## notes
 
 * systems get their own [branch](https://github.com/briceburg/bootystrap/branches), e.g. [archlinux](https://github.com/briceburg/bootystrap/tree/archlinux). NixOS branches are possible.
-* idempotently configures a system and provides the `gitbootystrap` command for managing "dotfiles".
-* additionally provides the `gitbooty` command for managing user dotfiles (see the [booty repository](https://github.com/briceburg/booty)).
+* idempotently configures a system -- managing packages, services, users, and core configuration. super helpful when installing a fresh OS! 
+* provides the `gitbootystrap` command for managing "system dotfiles" (e.g. under /etc and /usr/local/bin).
+* also provides the `gitbooty` command for managing "user dotfiles" (see the [booty repository](https://github.com/briceburg/booty)).
 
 
 ## usage
 
-* archlinux
+fork and modify to your needs.
+
+* briceburg's archlinux
   ```sh
   bash <(curl https://raw.githubusercontent.com/briceburg/bootystrap/archlinux/usr/local/bin/bootystrap)
   ```
@@ -37,3 +40,7 @@ gitbootystrap commit -m "adding new-file" && gitbootystrap push origin HEAD
 gitbootystrap status
 gitbootystrap pull
 ```
+
+## TODO
+
+* combine gitbooty and gitbootystrap command; when gitbooty is run as root, treat it as if it were gitbootystrap.
