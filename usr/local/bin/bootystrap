@@ -45,10 +45,12 @@ gui=(
   gvim
   mesa
   mesa-demos
+  noto-fonts-emoji
   pipewire-jack
   pipewire-pulse
   polkit-gnome
   ttf-croscore
+  ttf-nerd-fonts-symbols-mono
   ttf-roboto
   wezterm
   wireplumber # replaces pipewire media session

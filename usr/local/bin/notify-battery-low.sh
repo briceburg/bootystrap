@@ -22,7 +22,7 @@ if [ -z "$capacity" ]; then
   notify critical "$(basename "$0") missing capacity argument"
 elif [ "$capacity" -le 4 ]; then
   notify critical  "CRITICAL BATTERY LEVEL"
-elif [[ "$capacity" -le 66 && $(( last - capacity )) -ge 3 ]]; then
+elif [[ "$capacity" -le 15 && $(( last - capacity )) -ge 3 ]]; then
   notify normal  "Battery is getting low"
   echo "$capacity" > "$f.last"
 elif [ "$capacity" -gt "$last" ]; then
