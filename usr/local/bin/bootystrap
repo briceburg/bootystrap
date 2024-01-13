@@ -42,6 +42,7 @@ gui=(
   discord
   firefox
   flameshot
+  gvim
   mesa
   mesa-demos
   pipewire-jack
