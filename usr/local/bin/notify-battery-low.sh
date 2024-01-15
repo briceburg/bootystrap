@@ -11,11 +11,11 @@
 
 capacity="$1"
 f="/tmp/$(basename "$0")"
-id=$(cat "$f.id" 2>/dev/null)
 last=$(cat "$f.last" 2>/dev/null || echo 100)
 
 notify(){
-  notify-send -u "$1" -i battery-empty  -r "${id:-0}" -p "Battery status" "$2 (<b>$capacity%</b>)" > "$f.id"
+  notify-send -u "$1" -i battery-empty -h string:x-dunst-stack-tag:battery \
+  "Battery Notice" "$2 (<b>$capacity%</b>)"
 }
 
 if [ -z "$capacity" ]; then
